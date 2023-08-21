@@ -1,0 +1,17 @@
+<html>
+
+<body>
+    {% if name %}
+    <h1>Hello {{ name }}</h1>
+    {% else %}
+    <h1>Hello World</h1>
+    {% endif %}
+    {{ result }}
+    <ul>
+        {% for place in places %}
+        <li>{{ place.name }} - {{ place.full_address }}</li>
+        {% endfor %}
+    </ul>
+</body>
+
+</html>
