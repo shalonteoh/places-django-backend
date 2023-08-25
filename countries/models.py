@@ -1,6 +1,7 @@
 from django.core.validators import DecimalValidator, MinValueValidator, MaxValueValidator
 from django.db import models
 from django.contrib.auth.models import User
+from uuid import uuid4
 
 # Create your models here.
 
@@ -123,3 +124,21 @@ class Address(models.Model):
     class Meta:
         ordering = ['street']
         verbose_name_plural = "addresses"
+
+
+class Trip(models.Model):
+    id = models.UUIDField(primary_key=True, default=uuid4)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+
+class TripPlace(models.Model):
+    trip = models.ForeignKey(
+        Trip, on_delete=models.CASCADE, related_name='places')
+    place = models.ForeignKey(Place, on_delete=models.CASCADE)
+    date = models.DateField(null=True)
+    duration = models.PositiveIntegerField()
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    # Only allow one place in each trip
+    class Meta:
+        unique_together = [['trip', 'place', 'date']]
