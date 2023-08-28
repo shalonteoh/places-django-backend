@@ -136,7 +136,7 @@ class TripPlace(models.Model):
         Trip, on_delete=models.CASCADE, related_name='places')
     place = models.ForeignKey(Place, on_delete=models.CASCADE)
     date = models.DateField(null=True)
-    duration = models.PositiveIntegerField()
+    duration = models.DecimalField(max_digits=9, decimal_places=2, null=True)
     created_at = models.DateTimeField(auto_now_add=True)
 
     # Only allow one place in each trip
