@@ -1,5 +1,6 @@
+from itertools import count
 from rest_framework import serializers
-from .models import Place, Address, Visitor
+from .models import Place, Address, TripPlace, Visitor, Trip
 
 
 class AddressSerializer(serializers.ModelSerializer):
@@ -98,3 +99,119 @@ class VisitorSerializer(serializers.ModelSerializer):
     def create(self, validated_data):
         place_id = self.context['place_id']
         return Visitor.objects.create(place_id=place_id, **validated_data)
+
+
+class TripPlaceDetailSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Place
+        fields = [
+            'id',
+            'name',
+            'description',
+            'lat',
+            'lon',
+        ]
+
+
+class TripPlaceSerializer(serializers.ModelSerializer):
+    place = TripPlaceDetailSerializer()
+
+    class Meta:
+        model = TripPlace
+        fields = [
+            'id',
+            'place',
+            'date',
+            'duration',
+            'created_at'
+        ]
+
+
+class CreateOrUpdateTripPlaceSerializer(serializers.ModelSerializer):
+    place_id = serializers.IntegerField()
+
+    class Meta:
+        model = TripPlace
+        fields = [
+            'id',
+            'place_id',
+            'duration',
+            'date'
+        ]
+
+    def validate_place_id(self, value):
+        if not Place.objects.filter(pk=value).exists():
+            raise serializers.ValidationError(
+                'No place with the given ID was found')
+        return value
+
+    def validate_date(self, value):
+        if TripPlace.objects.filter(
+            place_id=self.instance.place_id,
+            date=value
+        ).exists():
+            raise serializers.ValidationError(
+                'Place already added in the date, no change performed'
+            )
+
+        return value
+
+    def save(self, **kwargs):
+        trip_place_id = self.instance.id
+        trip_id = self.context['trip_id']
+        place_id = self.validated_data['place_id']
+        duration = self.validated_data['duration']
+        date = self.validated_data['date']
+
+        # PATCH
+        if trip_place_id is not None:
+            trip_place = TripPlace.objects.get(pk=trip_place_id)
+            trip_place.duration = duration
+            trip_place.date = date
+            trip_place.save()
+            self.instance = trip_place
+        else:
+            try:
+                trip_place = TripPlace.objects.get(trip_id=trip_id,
+                                                   place_id=place_id,
+                                                   date=date)
+                # PATCH
+                trip_place.duration = duration
+                trip_place.save()
+                self.instance = trip_place
+            except TripPlace.DoesNotExist:
+                # POST
+                self.instance = TripPlace.objects.create(
+                    trip_id=trip_id, **self.validated_data)
+
+        return self.instance
+
+
+class TripSerializer(serializers.ModelSerializer):
+    id = serializers.UUIDField(read_only=True)
+    places = TripPlaceSerializer(
+        source='trip_places',
+        many=True,
+        read_only=True
+    )
+    total_places = serializers.IntegerField(
+        source='trip_places.count',
+        read_only=True
+    )
+    total_duration = serializers.SerializerMethodField(
+        method_name='calculate_total_duration',
+        read_only=True
+    )
+
+    class Meta:
+        model = Trip
+        fields = [
+            'id',
+            'places',
+            'total_places',
+            'total_duration',
+            'created_at'
+        ]
+
+    def calculate_total_duration(self, trip: Trip):
+        return sum([place.duration for place in trip.trip_places.all()])

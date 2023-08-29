@@ -1,16 +1,17 @@
 from django.shortcuts import get_object_or_404
 from django_filters.rest_framework import DjangoFilterBackend
 from rest_framework.filters import SearchFilter, OrderingFilter
+from rest_framework.mixins import CreateModelMixin, DestroyModelMixin, RetrieveModelMixin
 from rest_framework.pagination import PageNumberPagination
 from rest_framework.generics import ListCreateAPIView, RetrieveUpdateDestroyAPIView
 from rest_framework.decorators import api_view
 from rest_framework.response import Response
 from rest_framework.views import APIView
 from rest_framework import status
-from rest_framework.viewsets import ModelViewSet
+from rest_framework.viewsets import ModelViewSet, GenericViewSet
 from countries.filters import PlaceFilter
-from .models import Place, Address, Visitor
-from .serializers import PlaceSerializer, AddressSerializer, VisitorSerializer
+from .models import Place, Address, TripPlace, Visitor, Trip
+from .serializers import CreateOrUpdateTripPlaceSerializer, PlaceSerializer, AddressSerializer, TripPlaceSerializer, TripSerializer, VisitorSerializer
 
 
 class PlaceViewSet(ModelViewSet):
@@ -69,3 +70,37 @@ class VisitorViewSet(ModelViewSet):
 
     def get_serializer_context(self):
         return {'request': self.request, 'place_id': self.kwargs['place_pk']}
+
+
+class TripViewSet(CreateModelMixin,
+                  RetrieveModelMixin,
+                  DestroyModelMixin,
+                  GenericViewSet):
+    queryset = Trip.objects.prefetch_related('trip_places__place').all()
+    serializer_class = TripSerializer
+
+    def get_serializer_context(self):
+        return {'request': self.request}
+
+
+class TripPlaceViewSet(ModelViewSet):
+    http_method_names = [
+        'get',
+        'post',
+        'patch',
+        'delete'
+    ]
+
+    def get_serializer_class(self):
+        if self.request.method == 'POST' or self.request.method == 'PATCH':
+            return CreateOrUpdateTripPlaceSerializer
+        return TripPlaceSerializer
+
+    def get_serializer_context(self):
+        return {'trip_id': self.kwargs['trip_pk']}
+
+    def get_queryset(self):
+        return TripPlace.objects\
+            .filter(trip_id=self.kwargs['trip_pk'])\
+            .select_related('place')\
+            .order_by('date')

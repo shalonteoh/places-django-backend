@@ -6,6 +6,7 @@ from . import views
 
 router = routers.DefaultRouter()
 router.register('places', views.PlaceViewSet, basename='place')
+router.register('trips', views.TripViewSet, basename='trip')
 
 places_router = routers.NestedDefaultRouter(router, 'places', lookup='place')
 places_router.register('visitors', views.VisitorViewSet,
@@ -13,8 +14,12 @@ places_router.register('visitors', views.VisitorViewSet,
 places_router.register(
     'addresses', views.AddressViewSet, basename='place-address')
 
+trips_router = routers.NestedDefaultRouter(router, 'trips', lookup='trip')
+trips_router.register('places', views.TripPlaceViewSet, basename='trip-places')
+
 # URLConf
 urlpatterns = [
     path(r'', include(router.urls)),
-    path(r'', include(places_router.urls))
+    path(r'', include(places_router.urls)),
+    path(r'', include(trips_router.urls)),
 ]

@@ -1,3 +1,4 @@
+from decimal import Decimal
 from django.core.validators import DecimalValidator, MinValueValidator, MaxValueValidator
 from django.db import models
 from django.contrib.auth.models import User
@@ -133,10 +134,13 @@ class Trip(models.Model):
 
 class TripPlace(models.Model):
     trip = models.ForeignKey(
-        Trip, on_delete=models.CASCADE, related_name='places')
+        Trip, on_delete=models.CASCADE, related_name='trip_places')
     place = models.ForeignKey(Place, on_delete=models.CASCADE)
-    date = models.DateField(null=True)
-    duration = models.DecimalField(max_digits=9, decimal_places=2, null=True)
+    date = models.DateField()
+    duration = models.DecimalField(
+        max_digits=9,
+        decimal_places=2,
+        validators=[MinValueValidator(Decimal('0.1'))])
     created_at = models.DateTimeField(auto_now_add=True)
 
     # Only allow one place in each trip
