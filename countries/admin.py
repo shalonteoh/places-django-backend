@@ -36,6 +36,16 @@ class AddressFilter(admin.SimpleListFilter):
 
 # Register your models here.
 # Change model interface (Customize option @django admin)
+@admin.register(models.Member)
+class MemberAdmin(admin.ModelAdmin):
+    list_display = [
+        'first_name',
+        'last_name',
+        'birth_date',
+        'joined_at']
+    list_select_related = ['user']
+    ordering = ['user__first_name', 'user__last_name']
+    search_fields = ['first_name__istartwith', 'last_name__istartwith']
 
 
 @admin.register(models.Place)

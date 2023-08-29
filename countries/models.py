@@ -1,4 +1,5 @@
 from decimal import Decimal
+from django.contrib import admin
 from django.core.validators import DecimalValidator, MinValueValidator, MaxValueValidator
 from django.db import models
 from django.conf import settings
@@ -60,6 +61,27 @@ class Transit(models.Model):
     mode = models.CharField(max_length=2, choices=TRANSIT_MODES, default='W')
 
 
+class Member(models.Model):
+    birth_date = models.DateField(null=True, blank=True)
+    joined_at = models.DateTimeField(auto_now_add=True)
+    user = models.OneToOneField(settings.AUTH_USER_MODEL,
+                                on_delete=models.CASCADE)
+
+    def __str__(self) -> str:
+        return f'{self.user.first_name} {self.user.last_name}'
+
+    @admin.display(ordering='user__first_name')
+    def first_name(self):
+        return self.user.first_name
+
+    @admin.display(ordering='user__last_name')
+    def last_name(self):
+        return self.user.last_name
+
+    class Meta:
+        ordering = ['user__first_name', 'user__last_name']
+
+
 class Visitor(models.Model):
     VISIT_TYPES = [
         ('L', 'Local'),
@@ -67,11 +89,10 @@ class Visitor(models.Model):
         ('B', 'Business'),
         ('E', 'Expert'),
     ]
-    user = models.ForeignKey(
-        settings.AUTH_USER_MODEL,
-        blank=True,
-        null=True,
-        on_delete=models.SET_NULL)
+    user = models.ForeignKey(Member,
+                             blank=True,
+                             null=True,
+                             on_delete=models.SET_NULL)
     rating = models.DecimalField(max_digits=4, decimal_places=2)
     review = models.TextField()
     visit_type = models.CharField(
