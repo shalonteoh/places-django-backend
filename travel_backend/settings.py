@@ -11,6 +11,7 @@ https://docs.djangoproject.com/en/4.2/ref/settings/
 """
 
 from pathlib import Path
+from django.conf.global_settings import AUTH_USER_MODEL
 import pymysql
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
@@ -145,3 +146,6 @@ REST_FRAMEWORK = {
     'DEFAULT_PAGINATION_CLASS': 'rest_framework.pagination.PageNumberPagination',
     'PAGE_SIZE': 5
 }
+
+# Define extended user class config
+AUTH_USER_MODEL = 'core.User'

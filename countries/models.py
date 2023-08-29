@@ -1,7 +1,7 @@
 from decimal import Decimal
 from django.core.validators import DecimalValidator, MinValueValidator, MaxValueValidator
 from django.db import models
-from django.contrib.auth.models import User
+from django.conf import settings
 from uuid import uuid4
 
 # Create your models here.
@@ -68,7 +68,10 @@ class Visitor(models.Model):
         ('E', 'Expert'),
     ]
     user = models.ForeignKey(
-        User, blank=True, null=True, on_delete=models.SET_NULL)
+        settings.AUTH_USER_MODEL,
+        blank=True,
+        null=True,
+        on_delete=models.SET_NULL)
     rating = models.DecimalField(max_digits=4, decimal_places=2)
     review = models.TextField()
     visit_type = models.CharField(
@@ -136,8 +139,9 @@ class TripPlace(models.Model):
     trip = models.ForeignKey(
         Trip, on_delete=models.CASCADE, related_name='trip_places')
     place = models.ForeignKey(Place, on_delete=models.CASCADE)
-    date = models.DateField()
+    date = models.DateField(null=True)
     duration = models.DecimalField(
+        null=True,
         max_digits=9,
         decimal_places=2,
         validators=[MinValueValidator(Decimal('0.1'))])
