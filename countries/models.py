@@ -154,6 +154,15 @@ class Address(models.Model):
 class Trip(models.Model):
     id = models.UUIDField(primary_key=True, default=uuid4)
     created_at = models.DateTimeField(auto_now_add=True)
+    user = models.ForeignKey(Member,
+                             blank=True,
+                             null=True,
+                             on_delete=models.SET_NULL)
+
+    class Meta:
+        permissions = [
+            ('duplicate_trip', 'Can duplicate trip')
+        ]
 
 
 class TripPlace(models.Model):
