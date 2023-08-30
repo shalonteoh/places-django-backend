@@ -1,17 +1,18 @@
 from django.shortcuts import get_object_or_404
 from django_filters.rest_framework import DjangoFilterBackend
+from rest_framework.decorators import action
 from rest_framework.filters import SearchFilter, OrderingFilter
-from rest_framework.mixins import CreateModelMixin, DestroyModelMixin, RetrieveModelMixin
+from rest_framework.mixins import CreateModelMixin, DestroyModelMixin, RetrieveModelMixin, UpdateModelMixin
 from rest_framework.pagination import PageNumberPagination
 from rest_framework.generics import ListCreateAPIView, RetrieveUpdateDestroyAPIView
-from rest_framework.decorators import api_view
+from rest_framework.permissions import AllowAny, IsAuthenticated
 from rest_framework.response import Response
 from rest_framework.views import APIView
 from rest_framework import status
 from rest_framework.viewsets import ModelViewSet, GenericViewSet
 from countries.filters import PlaceFilter
-from .models import Place, Address, TripPlace, Visitor, Trip
-from .serializers import CreateOrUpdateTripPlaceSerializer, PlaceSerializer, AddressSerializer, TripPlaceSerializer, TripSerializer, VisitorSerializer
+from .models import Member, Place, Address, TripPlace, Visitor, Trip
+from .serializers import CreateOrUpdateTripPlaceSerializer, MemberSerializer, PlaceSerializer, AddressSerializer, TripPlaceSerializer, TripSerializer, VisitorSerializer
 
 
 class PlaceViewSet(ModelViewSet):
@@ -60,6 +61,38 @@ class AddressViewSet(ModelViewSet):
                 'error': 'Address associated with place cannot be deleted'
             })
         return super().destroy(request, *args, **kwargs)
+
+
+class MemberViewSet(CreateModelMixin,
+                    RetrieveModelMixin,
+                    UpdateModelMixin,
+                    GenericViewSet):
+    queryset = Member.objects.all()
+    serializer_class = MemberSerializer
+
+    # Custom permission classes
+    def get_permissions(self):
+        if self.request.method == 'GET':
+            return [AllowAny()]
+        return [IsAuthenticated()]
+
+    # Custom action responding to request
+    @action(
+        detail=False,
+        methods=[
+            'GET',
+            'PUT'
+        ])
+    def me(self, request):
+        (member, created) = Member.objects.get_or_create(user_id=request.user.id)
+        if request.method == 'GET':
+            serializer = MemberSerializer(member)
+        elif request.method == 'PUT':
+            serializer = MemberSerializer(member, data=request.data)
+            serializer.is_valid(raise_exception=True)
+            serializer.save()
+
+        return Response(serializer.data)
 
 
 class VisitorViewSet(ModelViewSet):

@@ -1,6 +1,6 @@
 from itertools import count
 from rest_framework import serializers
-from .models import Place, Address, TripPlace, Visitor, Trip
+from .models import Member, Place, Address, TripPlace, Visitor, Trip
 
 
 class AddressSerializer(serializers.ModelSerializer):
@@ -215,3 +215,16 @@ class TripSerializer(serializers.ModelSerializer):
 
     def calculate_total_duration(self, trip: Trip):
         return sum([place.duration for place in trip.trip_places.all()])
+
+
+class MemberSerializer(serializers.ModelSerializer):
+    user_id = serializers.IntegerField(read_only=True)
+
+    class Meta:
+        model = Member
+        fields = [
+            'id',
+            'user_id',
+            'birth_date',
+            'joined_at'
+        ]

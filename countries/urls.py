@@ -7,6 +7,7 @@ from . import views
 router = routers.DefaultRouter()
 router.register('places', views.PlaceViewSet, basename='place')
 router.register('trips', views.TripViewSet, basename='trip')
+router.register('members', views.MemberViewSet, basename='member')
 
 places_router = routers.NestedDefaultRouter(router, 'places', lookup='place')
 places_router.register('visitors', views.VisitorViewSet,
