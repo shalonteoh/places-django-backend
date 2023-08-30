@@ -5,12 +5,13 @@ from rest_framework.filters import SearchFilter, OrderingFilter
 from rest_framework.mixins import CreateModelMixin, DestroyModelMixin, RetrieveModelMixin, UpdateModelMixin
 from rest_framework.pagination import PageNumberPagination
 from rest_framework.generics import ListCreateAPIView, RetrieveUpdateDestroyAPIView
-from rest_framework.permissions import AllowAny, IsAuthenticated
+from rest_framework.permissions import AllowAny, DjangoModelPermissions, IsAdminUser, IsAuthenticated
 from rest_framework.response import Response
 from rest_framework.views import APIView
 from rest_framework import status
 from rest_framework.viewsets import ModelViewSet, GenericViewSet
 from countries.filters import PlaceFilter
+from countries.permissions import FullDjangoModelPermissions, IsAdminOrReadOnly, ViewMemberHistoryPermission
 from .models import Member, Place, Address, TripPlace, Visitor, Trip
 from .serializers import CreateOrUpdateTripPlaceSerializer, MemberSerializer, PlaceSerializer, AddressSerializer, TripPlaceSerializer, TripSerializer, VisitorSerializer
 
@@ -21,6 +22,7 @@ class PlaceViewSet(ModelViewSet):
     serializer_class = PlaceSerializer
     filter_backends = [DjangoFilterBackend, SearchFilter, OrderingFilter]
     filterset_class = PlaceFilter
+    permission_classes = [IsAdminOrReadOnly]
     search_fields = ['name', 'description']
     ordering_fields = ['rating', 'last_update']
 
@@ -63,18 +65,14 @@ class AddressViewSet(ModelViewSet):
         return super().destroy(request, *args, **kwargs)
 
 
-class MemberViewSet(CreateModelMixin,
-                    RetrieveModelMixin,
-                    UpdateModelMixin,
-                    GenericViewSet):
+class MemberViewSet(ModelViewSet):
     queryset = Member.objects.all()
     serializer_class = MemberSerializer
+    permission_classes = [IsAdminUser]
 
-    # Custom permission classes
-    def get_permissions(self):
-        if self.request.method == 'GET':
-            return [AllowAny()]
-        return [IsAuthenticated()]
+    @action(detail=True, permission_classes=[ViewMemberHistoryPermission])
+    def history(self, request, pk):
+        return Response('ok')
 
     # Custom action responding to request
     @action(
@@ -82,7 +80,8 @@ class MemberViewSet(CreateModelMixin,
         methods=[
             'GET',
             'PUT'
-        ])
+        ],
+        permission_classes=[IsAuthenticated])
     def me(self, request):
         (member, created) = Member.objects.get_or_create(user_id=request.user.id)
         if request.method == 'GET':
